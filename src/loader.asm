@@ -4,8 +4,9 @@ global loader             ; The entry symbol name made visible to the linker (Ta
 
 ; --- Multiboot Header (Required by GRUB) ---
 MAGIC_NUMBER  equ 0x1BADB002  ; The Multiboot Magic Number
-FLAGS         equ 0x0         ; No special Multiboot flags enabled for now
-CHECKSUM      equ -MAGIC_NUMBER ; Checksum calculation: (MAGIC + FLAGS + CHECKSUM = 0)
+ALIGN_MODULES equ 0x00000001 ; tell GRUB to align modules
+FLAGS         equ ALIGN_MODULES ; Multiboot flags
+CHECKSUM      equ -(MAGIC_NUMBER + FLAGS) ; Checksum calculation: (MAGIC + FLAGS + CHECKSUM = 0)
 
 ; --- Stack Setup (Task 2) ---
 KERNEL_STACK_SIZE equ 4096 ; Define the size of the uninitialized kernel stack (4KB)
@@ -14,7 +15,7 @@ extern kmain             ; Declare the C entry point function
 section .text            ; Start of the text (code) section (Must be first for Multiboot)
 align 4                  ; Ensure the header is 4-byte aligned
     dd MAGIC_NUMBER          ; Write the Magic Number
-    dd FLAGS                 ; Write the flags
+    dd FLAGS ; Write the Flags
     dd CHECKSUM              ; Write the checksum
  
  
@@ -22,8 +23,8 @@ loader:                  ; The actual entry point label
     ; Set up the stack pointer (ESP) to point to the highest address of the stack memory area.
     ; The stack grows downwards on x86.
     mov esp, kernel_stack + KERNEL_STACK_SIZE 
-    
     ; Transition from Assembly to C (Task 2)
+    push ebx            ; Push Multiboot info structure pointer onto the stack
     call kmain 
 
 .loop:

@@ -13,8 +13,10 @@
 #include "../driver/type.h"
 #include "../driver/file_system.h"
 
-
-void kmain(void) {
+typedef void (*call_module_t)(void);
+void kmain(u32int ebx) {
+    multiboot_info_t *mbinfo = (multiboot_info_t *) ebx;
+    unsigned int address_of_module = mbinfo->mods_addr;
     
     // Task 3 API: Clear the screen before displaying output
     fb_clear();
