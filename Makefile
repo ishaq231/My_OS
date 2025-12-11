@@ -29,6 +29,8 @@ all:   kernel iso_image run
 	gcc $(CFLAGS) $< -o $@
 %.o: driver/%.asm
 	nasm $(ASFLAGS) $< -o $@
+program:
+	nasm -f bin src/program.asm -o iso/modules/program
 # --- Linker Rule ---
 kernel: $(objects)
 # Link all object files into the final Multiboot ELF executable.
@@ -40,7 +42,8 @@ kernel: $(objects)
 	cp kernel.elf iso/boot/
 
 # --- ISO Creation Rule ---
-iso_image: kernel
+iso_image: kernel program
+# Ensure the program module is built and placed in the ISO structure.
 # Use genisoimage to create the final bootable ISO file (os.iso)
 # -R: Enables Rock Ridge extensions (better compatibility).
 # -b: Specifies the boot image file (the GRUB bootloader file).
@@ -79,5 +82,5 @@ run: iso_image
 # --- Cleanup Rule ---
 clean:
 # Remove all generated artifacts (executables, ISOs, object files, logs)
-	rm -f *.elf iso/boot/*.elf os.iso  logQ.txt *.o
+	rm -f *.elf iso/boot/*.elf os.iso  logQ.txt *.o iso/modules/program
 .PHONY: clean run all
