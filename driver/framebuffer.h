@@ -53,6 +53,7 @@ void fb_move_cursor(u16int pos);
 
 // Main function to print a string to the screen
 s32int fb_write(s8int *buf,  s32int len);
+s32int fb_print(s8int *buf);
 
 // Utility function to determine cursor position for the API
 s32int check_cursor_row ();

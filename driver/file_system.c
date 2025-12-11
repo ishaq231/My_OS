@@ -40,12 +40,12 @@ void fs_ls() {
     for (s32int i = 0; i < MAX_FILES; i++) {
         // If the file has a name, print it
         if (file_system[i].name[0] != '\0') {
-            fb_write("  ", 2);
-            fb_write(file_system[i].name, strlen(file_system[i].name));
-            fb_write("  ", 2);
+            fb_print("  ");
+            fb_print(file_system[i].name);
+            fb_print("  ");
         }
     }
-    fb_write("\n", 1);
+    fb_print("\n");
 }
 
 //  Read file content

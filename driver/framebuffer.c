@@ -79,13 +79,18 @@ s32int fb_write(s8int *buf,  s32int len){
              fb_scroll();
         }
     }
+
     
     // Update the physical hardware cursor after all writing is done.
     fb_move_cursor(fb_current_cursor_pos);
     
     return len;
 }
-
+s32int fb_print(s8int *buf){
+    s32int len = strlen(buf);
+    fb_write(buf, len);
+    return len;
+}
 /* check_cursor_row:
  * Utility function to get the current row index (0-24) of the cursor.
  * Used by the kernel for calculating moves (e.g., fb_move).
