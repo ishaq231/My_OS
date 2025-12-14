@@ -22,7 +22,8 @@ void kmain(u32int ebx) {
     // Check if the MODS flag is set (bit 3) and if there are modules
     if (mbinfo->mods_count > 0) {
         // Get the address of the first module
-        u32int prog_addr = mbinfo->mods_addr; // First field of module struct is mod_start
+        multiboot_module_t *module = (multiboot_module_t *) mbinfo->mods_addr;
+        u32int prog_addr = module->mod_start; // First field of module struct is mod_start
 
         // Jump to the code
         call_module_t start_program = (call_module_t) prog_addr;
@@ -38,10 +39,10 @@ void kmain(u32int ebx) {
     interrupts_install_idt();
     init_fs();
     set_color(default_color);
-    run_terminal();
+    run_terminal();*/
     while (1){
 
-    }*/
+    }
 }
     
     
