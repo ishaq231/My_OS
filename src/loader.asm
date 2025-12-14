@@ -1,43 +1,60 @@
 global loader                   ; The entry symbol for ELF
+global switch_to_user_mode      ; Make this visible to C
 
 MAGIC_NUMBER      equ 0x1BADB002
 ALIGN_MODULES     equ 0x00000001
 FLAGS             equ ALIGN_MODULES
 CHECKSUM          equ -(MAGIC_NUMBER + FLAGS)
-USER_MODE_CODE_SEGMENT_SELECTOR equ 0x18
-USER_MODE_DATA_SEGMENT_SELECTOR equ 0x20
+
+; GDT Segment Selectors
+KERNEL_CODE_SEG   equ 0x08
+KERNEL_DATA_SEG   equ 0x10
+USER_CODE_SEG     equ 0x18
+USER_DATA_SEG     equ 0x20
 
 KERNEL_STACK_SIZE equ 4096                  ; size of stack in bytes
-extern kernel_virtual_start
-extern kernel_virtual_end
-extern kernel_physical_start
-extern kernel_physical_end
+
 extern kmain
+extern kernel_physical_end
+extern kernel_physical_start
+extern kernel_virtual_end
+extern kernel_virtual_start
+
 section .bss
-align 4                                     ; align at 4 bytes
-kernel_stack:                               ; label points to beginning of memory
-    resb KERNEL_STACK_SIZE                  ; reserve stack for the kernel
+align 4
+kernel_stack:
+    resb KERNEL_STACK_SIZE
 
 section .data
 align 4096
-page_directory:                             ; Define a page directory
-    ; Identity map the first 4MB (Virtual 0x00000000 -> Physical 0x00000000)
-    ; 0x00000083 = Present + RW + HugePage (4MB)
+page_directory:
     dd 0x00000083
-    
-    ; Pad the entries between the first and the 768th entry (0xC0000000 offset)
     times (768-1) dd 0 
-
-    ; Map the higher-half (Virtual 0xC0000000 -> Physical 0x00000000)
     dd 0x00000083
-
-    ; Pad the rest of the directory
     times (1024-768-1) dd 0
-    [esp + 16] ss ; the stack segment selector we want for user mode
-    [esp + 12] esp ; the user mode stack pointer
-    [esp + 8] eflags ; the control flags we want to use in user mode
-    [esp + 4] cs ; the code segment selector
-    [esp + 0] eip ; the instruction pointer of user mode code to execute
+
+; --- GLOBAL DESCRIPTOR TABLE (GDT) ---
+align 4
+gdt_start:
+    ; 0x00: Null Descriptor
+    dd 0x0, 0x0 
+
+    ; 0x08: Kernel Code Segment (DPL 0)
+    dw 0xFFFF, 0x0000, 0x9A00, 0x00CF
+
+    ; 0x10: Kernel Data Segment (DPL 0)
+    dw 0xFFFF, 0x0000, 0x9200, 0x00CF
+
+    ; 0x18: User Code Segment (DPL 3)
+    dw 0xFFFF, 0x0000, 0xFA00, 0x00CF
+
+    ; 0x20: User Data Segment (DPL 3)
+    dw 0xFFFF, 0x0000, 0xF200, 0x00CF
+gdt_end:
+
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1  ; Limit (Size of GDT - 1)
+    dd gdt_start                ; Base Address
 
 section .text
 align 4
@@ -46,39 +63,70 @@ align 4
     dd CHECKSUM
 
 loader:
-    ; 1. Setup the Page Directory Address in CR3
-    ; We use the physical address of the page_directory label (subtract 0xC0000000)
+    ; 1. Setup Paging
     mov ecx, (page_directory - 0xC0000000)
     mov cr3, ecx
-
-    ; 2. Enable 4MB Pages (PSE bit in CR4)
     mov ecx, cr4
     or ecx, 0x00000010
     mov cr4, ecx
-
-    ; 3. Enable Paging (PG bit in CR0)
     mov ecx, cr0
     or ecx, 0x80000000
     mov cr0, ecx
-
-    ; 4. Jump to the higher-half kernel
-    ; We are now in paging mode!
     lea ecx, [higher_half]
     jmp ecx
 
 higher_half:
-    mov cs, USER_MODE_CODE_SEGMENT_SELECTOR | 0x3
-    mov ss, USER_MODE_DATA_SEGMENT_SELECTOR | 0x3
-    ; We are now running at 0xC0100000+
-    mov esp, kernel_stack + KERNEL_STACK_SIZE ; Set up the stack
+    ; 2. Load the GDT
+    lgdt [gdt_descriptor]
+
+    ; 3. Refresh Segments
+    mov ax, KERNEL_DATA_SEG
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    jmp KERNEL_CODE_SEG:.flush_cs
+.flush_cs:
+
+    mov esp, kernel_stack + KERNEL_STACK_SIZE 
     
-    push ebx ; Push Multiboot info structure (passed by GRUB in EBX)
+    push ebx
     push kernel_physical_end
     push kernel_physical_start
     push kernel_virtual_end
     push kernel_virtual_start
    
-    call kmain ; Call the C kernel
+    call kmain
 
 .loop:
     jmp .loop
+
+; --- SWITCH TO USER MODE FUNCTION ---
+; void switch_to_user_mode(void (*instruction_ptr)(void))
+switch_to_user_mode:
+    ; Fetch the argument (instruction_ptr) from the stack
+    mov ecx, [esp + 4] 
+
+    ; Set up the stack frame for 'iret' to return to Ring 3
+    ; Stack structure: [SS, ESP, EFLAGS, CS, EIP]
+    
+    mov ax, (USER_DATA_SEG | 0x3) ; User Data Selector with RPL 3
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    push (USER_DATA_SEG | 0x3)    ; SS
+    push esp                      ; ESP (Current stack is fine for now)
+    pushf                         ; EFLAGS
+    
+    ; Enable Interrupts in EFLAGS (Bit 9) so user mode can work
+    pop eax
+    or eax, 0x200
+    push eax
+
+    push (USER_CODE_SEG | 0x3)    ; CS with RPL 3
+    push ecx                      ; EIP (Entry point of user program)
+    
+    iret                          ; Jump to User Mode!

@@ -14,6 +14,7 @@
 #include "../driver/file_system.h"
 #include "../driver/multiboot.h"
 #include "../driver/pmm.h"
+extern void switch_to_user_mode(void (*entry_point)(void));
 typedef void (*call_module_t)(void);
 void print_hex(unsigned int n) {
     char *chars = "0123456789ABCDEF";
@@ -52,33 +53,11 @@ void kmain(u32int __attribute__((unused))k_virt_start, u32int k_virt_end,
    
     fb_print("Initializing PMM...\n");
     init_pmm(k_virt_end, mbinfo);
-    fb_print("Allocating a frame...\n");
-    u32int my_frame = pmm_alloc_frame();
-    fb_print("Frame allocated at: ");
-    print_hex(my_frame);
-    fb_print("\n");
-
-    // 4. Verify the result
-    // The address should be AFTER your kernel code (typically > 0x100000 + kernel size)
-    // and should be 4096-byte aligned (ends in 000).
-    if (my_frame > 0) {
-        fb_print("TEST PASSED: Received valid physical address.\n");
-    } else {
-        fb_print("TEST FAILED: Allocator returned 0 (Out of Memory?).\n");
-    }
-
-    // 5. Test: Allocate another frame to ensure it increments
-    u32int frame_2 = pmm_alloc_frame();
-    fb_print("Next frame at: ");
-    print_hex(frame_2);
-    fb_print("\n");
-
-    if (frame_2 == my_frame + 4096) {
-        fb_print("TEST PASSED: Frames are contiguous.\n");
-    }
+    fb_print("Switching to user mode...\n");
      // Jump to the code
-    call_module_t start_program = (call_module_t) prog_addr;
-    start_program();
+     switch_to_user_mode((void (*)(void))prog_addr);
+    //call_module_t start_program = (call_module_t) prog_addr;
+    //start_program();
     /*s32int row = check_cursor_row (); // Get current row index from software state
     // Move cursor 3 rows down from the current line, to the leftmost column (0).
     fb_move(0, (row + 3)); 
