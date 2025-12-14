@@ -15,8 +15,10 @@
 #include "../driver/multiboot.h"
 
 typedef void (*call_module_t)(void);
+void kernel_virtual_start(void);
+
 void kmain(u32int ebx) {
-    //fb_clear();
+    fb_clear();
     // Cast the ebx pointer to the multiboot_info_t struct
     multiboot_info_t *mbinfo = (multiboot_info_t *) ebx;
     // Check if the MODS flag is set (bit 3) and if there are modules
@@ -24,7 +26,7 @@ void kmain(u32int ebx) {
         // Get the address of the first module
         multiboot_module_t *module = (multiboot_module_t *) mbinfo->mods_addr;
         u32int prog_addr = module->mod_start; // First field of module struct is mod_start
-
+        fb_print("Jumping to module");
         // Jump to the code
         call_module_t start_program = (call_module_t) prog_addr;
         start_program(); 

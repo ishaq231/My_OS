@@ -5,7 +5,7 @@
 // --- Global State and Definitions ---
 
 // Memory-Mapped I/O base address for the Framebuffer (0xB8000)
-s8int *fb = (s8int *) 0x000B8000; 
+s8int *fb = (s8int *) 0xC00B8000; // Adjusted for higher half kernel
 
 // Software state: Tracks the current logical cursor position (cell index 0-1999).
 // This is critical for fb_write and must be externalized for My_API.c to access.

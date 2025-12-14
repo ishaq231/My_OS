@@ -1,36 +1,75 @@
-; loader.asm - The initial entry point for the kernel (Task 1 & 2)
+global loader                   ; The entry symbol for ELF
 
-global loader             ; The entry symbol name made visible to the linker (Task 1)
+MAGIC_NUMBER      equ 0x1BADB002
+ALIGN_MODULES     equ 0x00000001
+FLAGS             equ ALIGN_MODULES
+CHECKSUM          equ -(MAGIC_NUMBER + FLAGS)
 
-; --- Multiboot Header (Required by GRUB) ---
-MAGIC_NUMBER  equ 0x1BADB002  ; The Multiboot Magic Number
-ALIGN_MODULES equ 0x00000001 ; tell GRUB to align modules
+KERNEL_STACK_SIZE equ 4096                  ; size of stack in bytes
+extern kernel_virtual_start
+extern kernel_virtual_end
+extern kernel_physical_start
+extern kernel_physical_end
+extern kmain
+section .bss
+align 4                                     ; align at 4 bytes
+kernel_stack:                               ; label points to beginning of memory
+    resb KERNEL_STACK_SIZE                  ; reserve stack for the kernel
 
-CHECKSUM      equ -(MAGIC_NUMBER + ALIGN_MODULES) ; Checksum calculation: (MAGIC + FLAGS + CHECKSUM = 0)
+section .data
+align 4096
+page_directory:                             ; Define a page directory
+    ; Identity map the first 4MB (Virtual 0x00000000 -> Physical 0x00000000)
+    ; 0x00000083 = Present + RW + HugePage (4MB)
+    dd 0x00000083
+    
+    ; Pad the entries between the first and the 768th entry (0xC0000000 offset)
+    times (768-1) dd 0 
 
-; --- Stack Setup (Task 2) ---
-KERNEL_STACK_SIZE equ 4096 ; Define the size of the uninitialized kernel stack (4KB)
-extern kmain             ; Declare the C entry point function
+    ; Map the higher-half (Virtual 0xC0000000 -> Physical 0x00000000)
+    dd 0x00000083
 
-section .text            ; Start of the text (code) section (Must be first for Multiboot)
-align 4                  ; Ensure the header is 4-byte aligned
-    dd MAGIC_NUMBER          ; Write the Magic Number
-    dd ALIGN_MODULES ; Write the Flags
-    dd CHECKSUM              ; Write the checksum
- 
- 
-loader:                  ; The actual entry point label
-    ; Set up the stack pointer (ESP) to point to the highest address of the stack memory area.
-    ; The stack grows downwards on x86.
-    mov esp, kernel_stack + KERNEL_STACK_SIZE 
-    ; Transition from Assembly to C (Task 2)
-    push ebx            ; Push Multiboot info structure pointer onto the stack
-    call kmain 
+    ; Pad the rest of the directory
+    times (1024-768-1) dd 0
+
+section .text
+align 4
+    dd MAGIC_NUMBER
+    dd FLAGS
+    dd CHECKSUM
+
+loader:
+    ; 1. Setup the Page Directory Address in CR3
+    ; We use the physical address of the page_directory label (subtract 0xC0000000)
+    mov ecx, (page_directory - 0xC0000000)
+    mov cr3, ecx
+
+    ; 2. Enable 4MB Pages (PSE bit in CR4)
+    mov ecx, cr4
+    or ecx, 0x00000010
+    mov cr4, ecx
+
+    ; 3. Enable Paging (PG bit in CR0)
+    mov ecx, cr0
+    or ecx, 0x80000000
+    mov cr0, ecx
+
+    ; 4. Jump to the higher-half kernel
+    ; We are now in paging mode!
+    lea ecx, [higher_half]
+    jmp ecx
+
+higher_half:
+    ; We are now running at 0xC0100000+
+    mov esp, kernel_stack + KERNEL_STACK_SIZE ; Set up the stack
+    
+    push ebx ; Push Multiboot info structure (passed by GRUB in EBX)
+    push kernel_physical_end
+    push kernel_physical_start
+    push kernel_virtual_end
+    push kernel_virtual_start
+   
+    call kmain ; Call the C kernel
 
 .loop:
-    jmp .loop            ; Loop forever 
-
-section .bss             ; Start of the BSS (uninitialized data) section (Task 2)
-align 4                  ; Align data to 4 bytes
-kernel_stack:            ; Label marks the beginning of the reserved stack memory
-    resb KERNEL_STACK_SIZE ; Reserve the space for the stack in BSS 
+    jmp .loop

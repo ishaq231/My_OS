@@ -16,8 +16,7 @@ file_system.o\
 CFLAGS = -I. -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
 -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c
 ASFLAGS = -f elf
-# Define the default target that builds everything
-all:   kernel iso_image run
+
 
 # --- Compilation Rules ---
 

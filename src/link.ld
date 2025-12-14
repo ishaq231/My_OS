@@ -1,39 +1,28 @@
-/* Linker Script for the Multiboot ELF Kernel */
+ENTRY(loader)           /* The name of the entry label */
 
-ENTRY(loader)   /* Sets the initial entry point for execution (the 'loader' label in loader.asm) */
-
+. = 0xC0100000;         /* Tell the linker to link at 3GB + 1MB */
+/* these labels get exported to the code files */
+kernel_virtual_start = .;
+kernel_physical_start = . - 0xC0000000;
 SECTIONS {
-    /* Set the memory address counter to 1MB (0x00100000). */
-    /* This ensures the kernel is loaded outside the space reserved for BIOS/GRUB. */
-    . = 0x00100000;
-
-    /* --- Multiboot Header Section (Assumed to be placed here by an explicit section in loader.asm) --- */
-
-
-
-    /* .text Section: Holds all executable code */
-    .text ALIGN (0x1000) : /* Align the section boundary to 4KB */
-    {
-        *(.text) /* Include all executable code from all object files */
+    /* The AT(...) keyword specifies the physical load address */
+    .text ALIGN (0x1000) : AT(ADDR(.text) - 0xC0000000) {
+        *(.text)        /* All text sections from all files */
     }
 
-    /* .rodata Section: Holds read-only data, such as string literals */
-    .rodata ALIGN (0x1000) : 
-    {
-        *(.rodata*) /* Include all read-only data */
+    .rodata ALIGN (0x1000) : AT(ADDR(.rodata) - 0xC0000000) {
+        *(.rodata*)     /* All read-only data sections */
     }
 
-    /* .data Section: Holds initialized, writable data */
-    .data ALIGN (0x1000) :
-    {
-        *(.data) /* Include all initialized data */
+    .data ALIGN (0x1000) : AT(ADDR(.data) - 0xC0000000) {
+        *(.data)        /* All data sections */
     }
 
-    /* .bss Section: Holds uninitialized data (like the kernel stack) */
-    /* This region does not add size to the final kernel.elf file. */
-    .bss ALIGN (0x1000) : 
-    {
-        *(COMMON)  /* Include uninitialized common symbols */
-        *(.bss)    /* Include uninitialized data blocks */
+    .bss ALIGN (0x1000) : AT(ADDR(.bss) - 0xC0000000) {
+        *(COMMON)       /* All COMMON sections */
+        *(.bss)         /* All bss sections */
     }
+    kernel_virtual_end = .;
+    kernel_physical_end = . - 0xC0000000;
+
 }
