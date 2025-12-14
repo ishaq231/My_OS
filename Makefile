@@ -12,7 +12,7 @@ keyboard.o \
 pic.o \
 input_buffer.o\
 file_system.o\
-
+pmm.o
 CFLAGS = -I. -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
 -nostartfiles -nodefaultlibs -Wall -Wextra -Werror -c
 ASFLAGS = -f elf

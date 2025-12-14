@@ -50,4 +50,13 @@ struct multiboot_module {
 
 typedef struct multiboot_module multiboot_module_t;
 
+
+typedef struct multiboot_memory_map {
+    unsigned int size;
+    unsigned int base_addr_low;
+    unsigned int base_addr_high;
+    unsigned int length_low;
+    unsigned int length_high;
+    unsigned int type;
+} __attribute__((packed)) multiboot_memory_map_t;
 #endif /* INCLUDE_MULTIBOOT_H */
