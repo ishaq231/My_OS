@@ -4,6 +4,8 @@ MAGIC_NUMBER      equ 0x1BADB002
 ALIGN_MODULES     equ 0x00000001
 FLAGS             equ ALIGN_MODULES
 CHECKSUM          equ -(MAGIC_NUMBER + FLAGS)
+USER_MODE_CODE_SEGMENT_SELECTOR equ 0x18
+USER_MODE_DATA_SEGMENT_SELECTOR equ 0x20
 
 KERNEL_STACK_SIZE equ 4096                  ; size of stack in bytes
 extern kernel_virtual_start
@@ -31,6 +33,11 @@ page_directory:                             ; Define a page directory
 
     ; Pad the rest of the directory
     times (1024-768-1) dd 0
+    [esp + 16] ss ; the stack segment selector we want for user mode
+    [esp + 12] esp ; the user mode stack pointer
+    [esp + 8] eflags ; the control flags we want to use in user mode
+    [esp + 4] cs ; the code segment selector
+    [esp + 0] eip ; the instruction pointer of user mode code to execute
 
 section .text
 align 4
@@ -60,6 +67,8 @@ loader:
     jmp ecx
 
 higher_half:
+    mov cs, USER_MODE_CODE_SEGMENT_SELECTOR | 0x3
+    mov ss, USER_MODE_DATA_SEGMENT_SELECTOR | 0x3
     ; We are now running at 0xC0100000+
     mov esp, kernel_stack + KERNEL_STACK_SIZE ; Set up the stack
     
