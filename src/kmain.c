@@ -53,6 +53,27 @@ void kmain(u32int __attribute__((unused))k_virt_start, u32int k_virt_end,
    
     fb_print("Initializing PMM...\n");
     init_pmm(k_virt_end, mbinfo);
+    init_fs();
+    fb_print("File System Initialized.\n");
+    fb_print("Testing File System...\n");
+    
+    // 1. List files
+    fb_print("Listing files:\n");
+    fs_ls();
+
+    // 2. Read a file
+    fb_print("Reading 'ishaq.txt':\n");
+    char* content = (char*)fs_read("ishaq.txt");
+    if (content) {
+        fb_print(content);
+    } else {
+        fb_print("File not found!\n");
+    }
+
+    // 3. Create a new file
+    fb_print("Creating 'new.txt'...\n");
+    add_file("new.txt");
+    fs_ls();
     fb_print("Switching to user mode...\n");
      // Jump to the code
      switch_to_user_mode((void (*)(void))prog_addr);
