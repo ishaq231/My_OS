@@ -79,6 +79,7 @@ void kmain(u32int __attribute__((unused))k_virt_start, u32int k_virt_end,
     add_file("new.txt");
     fs_ls();
     */
+        interrupts_install_idt();
     init_syscalls();
 if (mbinfo->mods_count > 0) {
         
@@ -104,7 +105,7 @@ if (mbinfo->mods_count > 0) {
     /*s32int row = check_cursor_row (); // Get current row index from software state
     // Move cursor 3 rows down from the current line, to the leftmost column (0).
     fb_move(0, (row + 3)); 
-    interrupts_install_idt();
+    
     init_fs();
     set_color(default_color);
     run_terminal();*/
