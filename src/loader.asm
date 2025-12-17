@@ -28,9 +28,19 @@ kernel_stack:
 section .data
 align 4096
 page_directory:
+    ; Identity map the first 4MB (0x00000000 - 0x003FFFFF)
     dd 0x00000083
-    times (768-1) dd 0 
+    
+    ; Identity map the next 4MB (0x00400000 - 0x007FFFFF) <--- ADD THIS
+    dd 0x00400083
+
+    ; Adjust padding: 768 - 2 (because we used 2 entries now)
+    times (768-2) dd 0 
+
+    ; Map the higher-half (Virtual 0xC0000000 -> Physical 0x00000000)
     dd 0x00000083
+
+    ; Pad the rest
     times (1024-768-1) dd 0
 
 ; --- GLOBAL DESCRIPTOR TABLE (GDT) ---
