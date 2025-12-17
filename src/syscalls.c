@@ -14,9 +14,7 @@ void syscall_handler(registers_t regs) {
     // regs.eax contains the System Call Number
     switch (regs.eax) {
         case 1: // SYS_PRINT (Example: 1 = Print to screen)
-            // EBX contains the char* string
-            // ECX contains the length (optional, depending on your implementation)
-            fb_print((char*)regs.ebx);
+            fb_print((char*)regs.ebx); // Print string pointed by ebx
             break;
             
         case 2: // SYS_YIELD or SYS_EXIT (Example)

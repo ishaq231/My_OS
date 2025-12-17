@@ -32,12 +32,16 @@ void print_hex(unsigned int n) {
         n /= 16;
     }
     
+    
     // Print in reverse
     fb_write("0x", 2);
     while (i > 0) {
         char c = buffer[--i];
         fb_write(&c, 1);
     }
+}
+void memcpy(u8int *dest, u8int *src, u32int len) {
+    for(; len != 0; len--) *dest++ = *src++;
 }
 void kmain(u32int __attribute__((unused))k_virt_start, u32int k_virt_end, 
            __attribute__((unused)) u32int k_phys_start,  __attribute__((unused)) u32int k_phys_end, 
@@ -76,7 +80,23 @@ void kmain(u32int __attribute__((unused))k_virt_start, u32int k_virt_end,
     fs_ls();
     */
     init_syscalls();
-    fb_print("Switching to user mode...\n");
+if (mbinfo->mods_count > 0) {
+        
+        // 1. Get the random location from GRUB
+    u32int module_size = module->mod_end - module->mod_start;
+
+        // 2. Define our fixed location (matches 'org' in asm)
+    u32int fixed_location = 0x400000;
+
+        // 3. Move the code there!
+    memcpy((u8int*)fixed_location, (u8int*)prog_addr, module_size);
+
+    fb_print("Relocated module to 0x400000. Jumping...\n");
+
+        // 4. Jump to the fixed location
+    switch_to_user_mode((void (*)(void))fixed_location);
+    }
+    fb_print("Jumping to user mode...\n");
      // Jump to the code
      switch_to_user_mode((void (*)(void))prog_addr);
     //call_module_t start_program = (call_module_t) prog_addr;

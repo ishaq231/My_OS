@@ -20,7 +20,6 @@ struct IDTDescriptor idt_descriptors[INTERRUPTS_DESCRIPTOR_COUNT];
 struct IDT idt;
 
 extern u32int fb_current_cursor_pos;
-extern void set_color(u8int fg, u8int bg);
 void idt_set_gate(u8int num, u32int base, u16int sel, u8int flags) {
     idt_descriptors[num].offset_low = base & 0xFFFF;
     idt_descriptors[num].offset_high = (base >> 16) & 0xFFFF;
