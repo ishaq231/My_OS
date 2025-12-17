@@ -9,8 +9,8 @@ extern unsigned int prompt_length;
 extern void fb_clear(void);
 extern unsigned char color;
 extern char *fb; // CRITICAL: Declare the framebuffer memory pointer
-extern void fb_move_cursor(unsigned short pos); // Ensure this is also declared
-
+extern void fb_move_cursor(u16int pos); // Ensure this is also declared
+extern void isr_syscall();
 
 
 u8int input_buffer[INPUT_BUFFER_SIZE];
@@ -21,6 +21,17 @@ struct IDT idt;
 
 extern u32int fb_current_cursor_pos;
 extern void set_color(u8int fg, u8int bg);
+void idt_set_gate(u8int num, u32int base, u16int sel, u8int flags) {
+    idt_descriptors[num].offset_low = base & 0xFFFF;
+    idt_descriptors[num].offset_high = (base >> 16) & 0xFFFF;
+    
+    idt_descriptors[num].segment_selector = sel;
+    idt_descriptors[num].reserved = 0;
+    
+    // Set the flags (Type and Attributes) passed to the function
+    // For syscalls, this will be 0xEE (Present, Ring 3, 32-bit Interrupt Gate)
+    idt_descriptors[num].type_and_attr = flags;
+}
 void interrupts_init_descriptor(s32int index, u32int address)
 {
 	idt_descriptors[index].offset_high = (address >> 16) & 0xFFFF; // offset bits 0..15
@@ -143,4 +154,13 @@ void interrupt_handler(__attribute__((unused)) struct cpu_state cpu, u32int inte
         default:
             break;
     }
+}
+void init_syscalls() {
+    // Register interrupt 128 (0x80)
+    // 0x08 is the Kernel Code Segment
+    // 0xEE = 11101110 (Present, Ring 3, 32-bit Interrupt Gate)
+    idt_set_gate(0x80, (u32int)isr_syscall, 0x08, 0xEE);
+    
+    // We don't reload the IDT here because idt_set_gate updates the array in memory,
+    // which the CPU already knows about from interrupts_install_idt().
 }

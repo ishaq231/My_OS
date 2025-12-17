@@ -25,6 +25,7 @@ struct IDTDescriptor {
 } __attribute__((packed));
 
 void interrupts_install_idt();
+void idt_set_gate(u8int num, u32int base, u16int sel, u8int flags);
 
 // Wrappers around ASM.
 void load_idt(u32int idt_address);
@@ -49,6 +50,6 @@ struct stack_state {
 } __attribute__((packed));
 
 void interrupt_handler(struct cpu_state cpu, u32int interrupt, struct stack_state stack);
-
+void init_syscalls();
 
 #endif /* INCLUDE_INTERRUPTS */

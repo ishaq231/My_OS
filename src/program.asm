@@ -1,9 +1,16 @@
 bits 32
 
+section .text
+global _start
 
-mov eax, 0xDEADBEEF
-; enter infinite loop, nothing more to do
-; $ means "beginning of line", ie. the same instruction
-.loop:
-    cli
-    jmp .loop   
+section .data
+message db "Hello from User Mode via System Call!", 0
+_start:
+    ; --- Make a System Call to Print ---
+    mov eax, 1          ; Syscall Number 1 (Print)
+    mov ebx, message    ; Argument 1: Pointer to message
+    int 0x80            ; Trigger the interrupt -> Jump to Kernel
+
+    ; --- Loop forever ---
+    jmp $
+

@@ -55,7 +55,7 @@ void kmain(u32int __attribute__((unused))k_virt_start, u32int k_virt_end,
     init_pmm(k_virt_end, mbinfo);
     init_fs();
     fb_print("File System Initialized.\n");
-    fb_print("Testing File System...\n");
+    /*fb_print("Testing File System...\n");
     
     // 1. List files
     fb_print("Listing files:\n");
@@ -74,6 +74,8 @@ void kmain(u32int __attribute__((unused))k_virt_start, u32int k_virt_end,
     fb_print("Creating 'new.txt'...\n");
     add_file("new.txt");
     fs_ls();
+    */
+    init_syscalls();
     fb_print("Switching to user mode...\n");
      // Jump to the code
      switch_to_user_mode((void (*)(void))prog_addr);
