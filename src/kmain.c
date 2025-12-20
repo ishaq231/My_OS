@@ -63,7 +63,9 @@ void kmain(u32int __attribute__((unused))k_virt_start, u32int k_virt_end,
     init_timer();
     fb_print("Multitasking Initialized.\n");
     // Create a task for the terminal
+    u32int fixed_location = 0x400000;
     create_task(run_terminal, 0); // Kernel mode task
+    create_task((void (*)(void))fixed_location, 1); // User mode task
     asm volatile("sti"); // Enable interrupts
 if (mbinfo->mods_count > 0) {
         
@@ -71,7 +73,7 @@ if (mbinfo->mods_count > 0) {
     u32int module_size = module->mod_end - module->mod_start;
 
         // 2. Define our fixed location (matches 'org' in asm)
-    u32int fixed_location = 0x400000;
+    
 
         // 3. Move the code there!
     memcpy((u8int*)fixed_location, (u8int*)prog_addr, module_size);

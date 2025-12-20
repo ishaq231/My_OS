@@ -26,48 +26,43 @@ void create_task(void (*entry_point)(void), u32int is_user_mode) {
     p->pid = process_count;
     p->active = 1;
 
-    // 1. Allocate a Kernel Stack for this process
-    // We use your PMM to get a 4KB block
     u32int stack_phys = pmm_alloc_frame(); 
-    
-    // The stack grows down, so start at the top of the 4KB block
     u32int stack_top = stack_phys + 4096;
-
-    // 2. Set up the Stack Frame for "iret"
-    // When the scheduler switches to this task, it will pop these values.
-    
     u32int *stack = (u32int *)stack_top;
 
+    // 1. Setup the Hardware Context (iret expects these)
     if (is_user_mode) {
-        // --- USER MODE STACK FRAME ---
-        // SS, ESP, EFLAGS, CS, EIP
-        *--stack = 0x23;                // SS (User Data Segment | 3)
-        *--stack = stack_top;           // ESP (User Stack - reusing kernel stack for simplicity in this demo)
+        *--stack = 0x23;                // SS
+        *--stack = stack_top;           // ESP
         *--stack = 0x202;               // EFLAGS (Interrupts Enabled)
-        *--stack = 0x1B;                // CS (User Code Segment | 3)
-        *--stack = (u32int)entry_point; // EIP (Start instruction)
+        *--stack = 0x1B;                // CS
+        *--stack = (u32int)entry_point; // EIP
     } else {
-        // --- KERNEL MODE STACK FRAME ---
-        // EFLAGS, CS, EIP (No SS/ESP needed for Kernel->Kernel switch)
         *--stack = 0x202;               // EFLAGS
-        *--stack = 0x08;                // CS (Kernel Code)
+        *--stack = 0x08;                // CS
         *--stack = (u32int)entry_point; // EIP
     }
 
-    // 3. Push General Purpose Registers (edi, esi, ..., eax)
-    // The 'pusha' instruction pushes 8 registers. We fill them with 0.
+    // 2. Push General Purpose Registers (matches 'pusha')
     *--stack = 0; // EDI
     *--stack = 0; // ESI
     *--stack = 0; // EBP
-    *--stack = 0; // ESP (ignored)
+    *--stack = 0; // ESP (Ignored)
     *--stack = 0; // EBX
     *--stack = 0; // EDX
     *--stack = 0; // ECX
     *--stack = 0; // EAX
 
-    // 4. Save the final Stack Pointer to the process struct
+    // 3. Push Segment Registers (matches 'push ds/es/fs/gs')
+    // --- THIS WAS MISSING ---
+    *--stack = 0x10; // DS (Kernel Data Segment)
+    *--stack = 0x10; // ES
+    *--stack = 0x10; // FS
+    *--stack = 0x10; // GS
+
+    // 4. Save the stack pointer
     p->esp = (u32int)stack;
-    p->kernel_stack = stack_top; // Used for TSS later
+    p->kernel_stack = stack_top; 
 
     process_count++;
 }

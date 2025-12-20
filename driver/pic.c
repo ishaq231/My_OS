@@ -52,7 +52,20 @@ void pic_remap(s32int offset1, s32int offset2)
 	asm("sti"); // Enable interrupts.
 }
 #define FREQUENCY 50
+void pic_unmask_irq(u8int irq) {
+    u16int port;
+    u8int value;
 
+    if(irq < 8) {
+        port = 0x21; // Master Data Port
+    } else {
+        port = 0xA1; // Slave Data Port
+        irq -= 8;
+    }
+
+    value = inb(port) & ~(1 << irq); // Set bit to 0 to unmask
+    outb(port, value);
+}
 void init_timer() {
     // 1. Calculate divisor
     u32int divisor = 1193180 / FREQUENCY;
@@ -63,4 +76,5 @@ void init_timer() {
     // 3. Send divisor (Low byte, then High byte)
     outb(0x40, divisor & 0xFF);
     outb(0x40, (divisor >> 8) & 0xFF);
+	pic_unmask_irq(0);
 }
