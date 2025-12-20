@@ -33,5 +33,6 @@
 
 void pic_remap(s32int offset1, s32int offset2);
 void pic_acknowledge(u32int interrupt);
+void init_timer();
 
 #endif /* INCLUDE_PIC_H */

@@ -1,14 +1,14 @@
 #include "io.h"
 #include "pic.h"
 #include "framebuffer.h"
-
+#include "../src/process.h" // To call schedule()
 /*
     Programmable Interrupt Controller
 	From: http://wiki.osdev.org/PIC
 	Reinitialize the PIC controllers, giving them specified vector offsets
 	rather than 8h and 70h, as configured by default.
 */
-
+#define FREQUENCY 50
 /**
   *  Acknowledges an interrupt from either PIC 1 or PIC 2.
   *
@@ -50,4 +50,17 @@ void pic_remap(s32int offset1, s32int offset2)
 	outb(PIC_2_DATA, 0xFF);
 
 	asm("sti"); // Enable interrupts.
+}
+#define FREQUENCY 50
+
+void init_timer() {
+    // 1. Calculate divisor
+    u32int divisor = 1193180 / FREQUENCY;
+
+    // 2. Send command byte to port 0x43
+    outb(0x43, 0x36);
+
+    // 3. Send divisor (Low byte, then High byte)
+    outb(0x40, divisor & 0xFF);
+    outb(0x40, (divisor >> 8) & 0xFF);
 }

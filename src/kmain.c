@@ -14,32 +14,10 @@
 #include "../driver/file_system.h"
 #include "../driver/multiboot.h"
 #include "../driver/pmm.h"
+#include "process.h"
 extern void switch_to_user_mode(void (*entry_point)(void));
 typedef void (*call_module_t)(void);
-void print_hex(unsigned int n) {
-    char *chars = "0123456789ABCDEF";
-    unsigned char buffer[10];
-    int i = 0;
-    
-    // Convert to hex string
-    if (n == 0) {
-        fb_write("0", 1);
-        return;
-    }
-    
-    while (n > 0) {
-        buffer[i++] = chars[n % 16];
-        n /= 16;
-    }
-    
-    
-    // Print in reverse
-    fb_write("0x", 2);
-    while (i > 0) {
-        char c = buffer[--i];
-        fb_write(&c, 1);
-    }
-}
+
 void memcpy(u8int *dest, u8int *src, u32int len) {
     for(; len != 0; len--) *dest++ = *src++;
 }
@@ -79,8 +57,14 @@ void kmain(u32int __attribute__((unused))k_virt_start, u32int k_virt_end,
     add_file("new.txt");
     fs_ls();
     */
-        interrupts_install_idt();
+    interrupts_install_idt();
     init_syscalls();
+    init_multitasking();
+    init_timer();
+    fb_print("Multitasking Initialized.\n");
+    // Create a task for the terminal
+    create_task(run_terminal, 0); // Kernel mode task
+    asm volatile("sti"); // Enable interrupts
 if (mbinfo->mods_count > 0) {
         
         // 1. Get the random location from GRUB

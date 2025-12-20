@@ -11,7 +11,7 @@ extern unsigned char color;
 extern char *fb; // CRITICAL: Declare the framebuffer memory pointer
 extern void fb_move_cursor(u16int pos); // Ensure this is also declared
 extern void isr_syscall();
-
+extern void isr_timer();
 
 u8int input_buffer[INPUT_BUFFER_SIZE];
 u8int buffer_index = 0;
@@ -56,7 +56,7 @@ void interrupts_install_idt()
 {
 	
 	interrupts_init_descriptor(INTERRUPTS_KEYBOARD, (u32int) interrupt_handler_33);
-
+    idt_set_gate(32, (u32int)isr_timer, 0x08, 0x8E); // 0x8E = Kernel Mode Interrupt Gate
 
 	idt.address = (s32int) &idt_descriptors;
 	idt.size = sizeof(struct IDTDescriptor) * INTERRUPTS_DESCRIPTOR_COUNT;
