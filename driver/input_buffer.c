@@ -18,20 +18,30 @@ static s32int history_count = 0;
 static s32int history_browse_idx = 0; // Where we are currently looking
 
 void history_add(char *input) {
-    // 1. Measure the EXACT size of the input string
+    if (input[0] == '\0') return; // Don't save empty commands
+
+    // 1. If history is full, free the oldest command and shift everything left
+    if (history_count == 20) {
+        // Free the string at index 0 to prevent memory leak
+        kfree(history[0]); 
+
+        // Shift pointers
+        for (int i = 0; i < 19; i++) {
+            history[i] = history[i+1];
+        }
+        
+        // Decrement count so we can write to index 19
+        history_count--;
+    }
+
+    // 2. Allocate and Save
     u32int len = strlen(input);
-
-    // 2. Allocate ONLY what we need
     char *saved_cmd = (char*)kmalloc(len + 1);
-
-    // 3. Copy the data
     strcpy(saved_cmd, input);
 
-    // 4. Save the pointer
     history[history_count] = saved_cmd;
     history_count++;
 }
-
 
 /**
  * @brief Removes and returns a single character from the input buffer.

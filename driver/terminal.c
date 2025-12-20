@@ -236,25 +236,44 @@ void process_command(s8int* input) {
     }
 }
 
-void run_terminal(){
+void run_terminal() {
     s32int max_size = 256;
-    s8int* buffer = (s8int*)kmalloc(max_size);
-    fb_write("myos> ", 6);
-    prompt_length =  fb_current_cursor_pos;
-    while (1){
-        readline(buffer, max_size);
-        u32int len = strlen(buffer);
-        s8int* temp = (s8int*)kmalloc(len + 1);
-        strcpy(temp, buffer);
-        kfree(buffer);
-        fb_print("\n");
-        set_color(code_run);
-        process_command(temp);
-        kfree(temp);
-        set_color(default_color);
-        fb_print("myos> ");
-        prompt_length =  fb_current_cursor_pos;
+    
+    // 1. Allocate once. Do NOT free this inside the loop.
+    s8int* buffer = (s8int*)kmalloc(max_size); 
+
+    if (buffer == 0) {
+        fb_print("Failed to allocate terminal buffer!\n");
+        return;
     }
 
+    fb_write("myos> ", 6);
+    prompt_length = fb_current_cursor_pos;
 
+    while (1) {
+        // 2. Reuse the same buffer every time
+        readline(buffer, max_size);
+        
+        // 3. Create a copy for the command processing
+        u32int len = strlen(buffer);
+        s8int* temp = (s8int*)kmalloc(len + 1);
+        
+        if (temp != 0) {
+            strcpy(temp, buffer);
+            fb_print("\n");
+            
+            set_color(code_run);
+            process_command(temp);
+            
+            kfree(temp); // We are done with the copy
+        } else {
+            fb_print("\nError: Out of memory for command processing.\n");
+        }
+
+        set_color(default_color);
+        fb_print("myos> ");
+        prompt_length = fb_current_cursor_pos;
+        
+       
+    }
 }
