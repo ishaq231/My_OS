@@ -1,6 +1,6 @@
 global loader                   
 global switch_to_user_mode      
-
+global tss_entry
 MAGIC_NUMBER      equ 0x1BADB002
 ALIGN_MODULES     equ 0x00000001
 FLAGS             equ ALIGN_MODULES

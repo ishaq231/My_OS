@@ -4,6 +4,7 @@
 #include "My_API.h"
 #include "type.h"
 #include "file_system.h"
+#include "../src/heap.h"
 extern void fs_ls();
 extern s8int* fs_read(s8int* filename);
 u32int prompt_length = 0; // Length of the prompt
@@ -174,7 +175,7 @@ void cmd_edit(s8int* file) {
 struct command commands[] = {
     {"cls", cmd_clear},
     {"echo", cmd_echo},
-    {"help", cmd_help},
+    {"-h", cmd_help},
     {"version", cmd_versions},
     {"bye", cmd_shutdown},
     {"smile", cmd_smile},
@@ -231,19 +232,25 @@ void process_command(s8int* input) {
         fb_print("Unknown command: ");
         fb_print(command_name);
         fb_print("\n");
-        fb_print("Type 'help' for a list of commands.\n");
+        fb_print("Type '-h' for a list of commands.\n");
     }
 }
 
 void run_terminal(){
-    s8int buffer[128];
+    s32int max_size = 256;
+    s8int* buffer = (s8int*)kmalloc(max_size);
     fb_write("myos> ", 6);
     prompt_length =  fb_current_cursor_pos;
     while (1){
-        readline(buffer, 128);
+        readline(buffer, max_size);
+        u32int len = strlen(buffer);
+        s8int* temp = (s8int*)kmalloc(len + 1);
+        strcpy(temp, buffer);
+        kfree(buffer);
         fb_print("\n");
         set_color(code_run);
-        process_command(buffer);
+        process_command(temp);
+        kfree(temp);
         set_color(default_color);
         fb_print("myos> ");
         prompt_length =  fb_current_cursor_pos;

@@ -176,6 +176,14 @@ s32int multiply_two_nums(s32int x, s32int y) {
 s32int is_odd(s32int num) {
     return (num % 2 != 0);
 }
+void strcpy(s8int* dest, s8int* src) {
+    int i = 0;
+    while (src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0'; // Don't forget the null terminator!
+}
 
 FB_Color code_run = {FB_BLUE, FB_BLACK}; 
 FB_Color default_color = {FB_WHITE, FB_BLACK};

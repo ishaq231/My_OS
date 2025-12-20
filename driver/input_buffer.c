@@ -6,45 +6,29 @@
 #include "framebuffer.h"
 #include "keyboard.h"
 #include "type.h"
+#include "My_API.h"
+#include "../src/heap.h"
 extern u32int fb_current_cursor_pos;
 // Global variable to track the read position (the 'tail' of the circular buffer)
 static u8int read_index = 0; 
 
 // history buffer definitions
-#define HISTORY_SIZE 20
-#define CMD_MAX_LEN 128
-static s8int history[HISTORY_SIZE][CMD_MAX_LEN];
+static s8int *history[20];
 static s32int history_count = 0;
 static s32int history_browse_idx = 0; // Where we are currently looking
 
-void history_add(s8int* cmd) {
-    if (cmd[0] == '\0') return; // Don't add empty commands
+void history_add(char *input) {
+    // 1. Measure the EXACT size of the input string
+    u32int len = strlen(input);
 
-        // If history is full, remove the oldest command (shift left)
-    if (history_count == HISTORY_SIZE) {
-        for (int i = 0; i < HISTORY_SIZE - 1; i++) {
-            // Manual string copy 
-            s8int* dest = history[i];
-            s8int* src = history[i+1];
-            s32int k = 0;
-            while (src[k] != '\0') {
-                dest[k] = src[k];
-                k++;
-            }
-            dest[k] = '\0';
-        }
-        // Decrement count because we are about to overwrite the last slot
-        history_count--;
-    }
+    // 2. Allocate ONLY what we need
+    char *saved_cmd = (char*)kmalloc(len + 1);
 
-    // Now add the new command at the end [history_count]
-    s32int i = 0;
-    while (cmd[i] != '\0' && i < CMD_MAX_LEN - 1) {
-        history[history_count][i] = cmd[i];
-        i++;
-    }
-    history[history_count][i] = '\0';
-    
+    // 3. Copy the data
+    strcpy(saved_cmd, input);
+
+    // 4. Save the pointer
+    history[history_count] = saved_cmd;
     history_count++;
 }
 

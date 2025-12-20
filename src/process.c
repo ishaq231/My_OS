@@ -2,7 +2,7 @@
 #include "../driver/framebuffer.h"
 #include "../driver/pmm.h"
 #include "../driver/type.h"
-
+extern u32int tss_entry;
 // Array to hold our processes
 process_t processes[MAX_PROCESSES];
 int process_count = 0;
@@ -84,6 +84,8 @@ u32int schedule(u32int current_esp) {
     if (current_process_index >= process_count) {
         current_process_index = 0;
     }
+    u32int *tss = (u32int *)&tss_entry;
+    tss[1] = processes[current_process_index].kernel_stack;
 
     // 3. Return the new stack pointer
     return processes[current_process_index].esp;

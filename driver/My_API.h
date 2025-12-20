@@ -25,6 +25,7 @@ s32int str_to_int(const s8int* str);
 s32int sum_of_three_nums(s32int a, s32int b, s32int c);
 s32int multiply_two_nums(s32int x, s32int y);
 s32int is_odd(s32int num);
+void strcpy(s8int* dest, s8int* src);
 extern FB_Color default_color;
 extern FB_Color code_run;
 extern FB_Color highlight_color;
