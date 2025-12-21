@@ -16,8 +16,8 @@ struct command{
     void (*function)(s8int* args);
 };
 
-s8int num_buffer[12];
-s8int nums[3];
+
+s32int nums[3];
 void cmd_clear( __attribute__((unused)) s8int* args){
     fb_clear();
     prompt_length =  fb_current_cursor_pos;
@@ -58,6 +58,7 @@ void cmd_smile(__attribute__((unused)) s8int* args){
     fb_print("\n");
 }
 void cmd_Func_1(__attribute__((unused)) s8int* args){
+    s8int *num_buffer = kmalloc(12);
     for( s32int i = 0; i < 3; i++){
         fb_print("enter a number: ");
         readline(num_buffer, 12);
@@ -67,17 +68,21 @@ void cmd_Func_1(__attribute__((unused)) s8int* args){
      if (nums[i] == -1) {
             set_color(error_color);
             fb_print("Invalid number\n");
+            kfree(num_buffer);
             return;
         }
     }
+    kfree(num_buffer);
     s32int sum = sum_of_three_nums(nums[0], nums[1], nums[2]);
     fb_print("the sum is: ");
-    s8int sum_str[12];
+    s8int *sum_str = kmalloc(16);
     int_to_str(sum, sum_str);
     fb_print(sum_str);
     fb_print("\n");
+    kfree(sum_str);
 }
 void cmd_func_2(__attribute__((unused)) s8int* args){
+    s8int *num_buffer = kmalloc(100);
     for( s32int i = 0; i < 2; i++){
         fb_print("enter a number: ");
         readline(num_buffer, 12);
@@ -90,16 +95,18 @@ void cmd_func_2(__attribute__((unused)) s8int* args){
             return;
         }
     }
+    kfree(num_buffer);
     s32int product = multiply_two_nums(nums[0], nums[1]);
     fb_print("the product is: ");
-    s8int product_str[12];
+    s8int *product_str = kmalloc(5000);
     int_to_str(product, product_str);
     fb_print(product_str);
     fb_print("\n");
+    kfree(product_str);
 }
 void cmd_func_3(__attribute__((unused)) s8int* args){
     fb_print("enter a number: ");
-    s8int num_buffer[12];
+    s8int *num_buffer = kmalloc(16);
     readline(num_buffer, 12);
     s32int num = str_to_int(num_buffer);
     if (num == -1) {
@@ -114,6 +121,7 @@ void cmd_func_3(__attribute__((unused)) s8int* args){
     } else {
         fb_print(" No\n");
     }
+    kfree(num_buffer);
 }
 void cmd_ls(__attribute__((unused)) s8int* args) {
     fs_ls();
@@ -163,12 +171,13 @@ void cmd_edit(s8int* file) {
         fb_print("Editing file: ");
         fb_print(file);
         fb_print("\n");
-        s8int content_buffer[256];
+        s8int *content_buffer = kmalloc(256);
         fb_print("Enter new content: ");
         readline(content_buffer, 256);
         edit_file(file, (s8int*)content_buffer);
         set_color(success_color);
         fb_print("File updated successfully.\n");
+        kfree(content_buffer);
     }
     fb_print("\n");
 }

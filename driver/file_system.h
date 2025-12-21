@@ -8,6 +8,7 @@ struct file_node {
     s8int name[32];      // The name of the file (e.g., "readme.txt")
     s8int *content;      // Pointer to the file data
     u32int size;        // Size of the file
+    struct file_node* next; // Pointer to the next file (for linked list)
 };
 
 // Initialize the file system

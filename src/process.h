@@ -8,10 +8,10 @@ typedef struct process {
     u32int esp;             // Stack Pointer (Saved when pausing)
     u32int kernel_stack;    // Location of the Kernel Stack (for TSS)
     u32int active;          // Is this process alive?
+    struct process *next;   // Pointer to the next process in the list
 } process_t;
 
-// We will have a fixed number of processes for now
-#define MAX_PROCESSES 10
+
 
 // Functions
 void init_multitasking();

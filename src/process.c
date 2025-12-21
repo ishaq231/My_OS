@@ -3,16 +3,13 @@
 #include "../driver/pmm.h"
 #include "../driver/type.h"
 extern u32int tss_entry;
-// Array to hold our processes
-process_t processes[MAX_PROCESSES];
-int process_count = 0;
-int current_process_index = -1;
+process_t *process_count = 0;
+process_t *current_process_index = 0;
+u32int next_pid = 0;             // Auto-incrementing PID
 
 void init_multitasking() {
-    // Initialize the process array
-    for (int i = 0; i < MAX_PROCESSES; i++) {
-        processes[i].active = 0;
-    }
+    process_count = 0;
+    current_process_index = 0;
     fb_print("Multitasking Initialized.\n");
 }
 
@@ -20,12 +17,17 @@ void init_multitasking() {
 // entry_point: The function to run (e.g., run_terminal or your user program address)
 // is_user_mode: 1 for Ring 3 (User), 0 for Ring 0 (Kernel)
 void create_task(void (*entry_point)(void), u32int is_user_mode) {
-    if (process_count >= MAX_PROCESSES) return;
+   process_t *new_task = (process_t*)kmalloc(sizeof(process_t));
 
-    process_t *p = &processes[process_count];
-    p->pid = process_count;
-    p->active = 1;
+   if (new_task == 0) {
+       fb_print("Failed to allocate memory for new task!\n");
+       return;
+   }
+    new_task->pid = next_pid++;
+    new_task->active = 1;
+    new_task->next = 0; // It will be at the end of the list
 
+    // 3. Allocate Stack
     u32int stack_phys = pmm_alloc_frame(); 
     u32int stack_top = stack_phys + 4096;
     u32int *stack = (u32int *)stack_top;
@@ -60,33 +62,49 @@ void create_task(void (*entry_point)(void), u32int is_user_mode) {
     *--stack = 0x10; // FS
     *--stack = 0x10; // GS
 
-    // 4. Save the stack pointer
-    p->esp = (u32int)stack;
-    p->kernel_stack = stack_top; 
+    new_task->esp = (u32int)stack;
+    new_task->kernel_stack = stack_top;
 
-    process_count++;
+    // 4. Add to the Linked List
+    if (process_count == 0) {
+        // First task ever!
+        process_count = new_task;
+        current_process_index = new_task;
+    } else {
+        // Find the end of the list and attach it
+        process_t *temp = process_count;
+        while (temp->next != 0) {
+            temp = temp->next;
+        }
+        temp->next = new_task;
+    }
 }
 
 // The Scheduler!
 // This is called by the Assembly Timer Handler.
 // It takes the OLD stack pointer, saves it, picks a NEW process, and returns the NEW stack pointer.
 u32int schedule(u32int current_esp) {
-    // If we haven't started multitasking yet, just return
+    // If no tasks exist, just stay here
     if (process_count == 0) return current_esp;
 
-    // 1. Save the state of the current process
-    if (current_process_index >= 0) {
-        processes[current_process_index].esp = current_esp;
+    // 1. Save the old task's stack pointer
+    // (Only if we have actually started multitasking)
+    if (current_process_index != 0) {
+        current_process_index->esp = current_esp;
     }
 
-    // 2. Pick the next process (Round Robin)
-    current_process_index++;
-    if (current_process_index >= process_count) {
-        current_process_index = 0;
+    // 2. Pick the NEXT task (Round Robin)
+    if (current_process_index->next != 0) {
+        current_process_index = current_process_index->next;
+    } else {
+        // End of list? Loop back to the start!
+        current_process_index = process_count;
     }
+
+    // 3. Update TSS (Security requirement for User Mode)
     u32int *tss = (u32int *)&tss_entry;
-    tss[1] = processes[current_process_index].kernel_stack;
+    tss[1] = current_process_index->kernel_stack; 
 
-    // 3. Return the new stack pointer
-    return processes[current_process_index].esp;
+    // 4. Return the new task's stack pointer
+    return current_process_index->esp;
 }
