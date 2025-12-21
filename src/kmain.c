@@ -34,21 +34,6 @@ void kmain( __attribute__((unused)) u32int k_virt_start, __attribute__((unused))
     init_pmm(k_virt_end, mbinfo);
     u32int heap_start = k_virt_end + 40960; // Leave some padding just in case
     init_heap(heap_start, 1024 * 1024); // 1 MB Heap
-
-    // --- TEST THE HEAP ---
-    fb_print("Testing Heap...\n");
-    
-    char *a = (char *)kmalloc(10);
-    a[0] = 'H'; a[1] = 'i'; a[2] = '\0';
-    fb_print(a); // Should print "Hi"
-    fb_print("\n");
-    
-    u32int *b = (u32int *)kmalloc(sizeof(u32int));
-    *b = 12345;
-    
-    kfree(a);
-    kfree(b);
-    fb_print("Heap Test Passed.\n");
     init_fs();
     interrupts_install_idt();
     init_syscalls();

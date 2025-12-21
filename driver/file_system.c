@@ -2,7 +2,7 @@
 #include "framebuffer.h" // For fb_write
 #include "My_API.h"      // For strlen, strcmp (if you moved them here)
 #include "type.h"
-
+#include "../src/heap.h" // For kmalloc, kfree
 
 // This array represents your "Hard Drive"
 struct file_node *fs_head = 0; // Head of the linked list

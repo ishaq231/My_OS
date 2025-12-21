@@ -2,6 +2,7 @@
 #include "../driver/framebuffer.h"
 #include "../driver/pmm.h"
 #include "../driver/type.h"
+#include "heap.h"
 extern u32int tss_entry;
 process_t *process_count = 0;
 process_t *current_process_index = 0;
@@ -69,7 +70,6 @@ void create_task(void (*entry_point)(void), u32int is_user_mode) {
     if (process_count == 0) {
         // First task ever!
         process_count = new_task;
-        current_process_index = new_task;
     } else {
         // Find the end of the list and attach it
         process_t *temp = process_count;
@@ -87,17 +87,19 @@ u32int schedule(u32int current_esp) {
     // If no tasks exist, just stay here
     if (process_count == 0) return current_esp;
 
-    // 1. Save the old task's stack pointer
-    // (Only if we have actually started multitasking)
+    // 1. SAVE STATE (Only if we are already running a valid task)
     if (current_process_index != 0) {
         current_process_index->esp = current_esp;
-    }
-
-    // 2. Pick the NEXT task (Round Robin)
-    if (current_process_index->next != 0) {
+        // Move to next task
         current_process_index = current_process_index->next;
     } else {
-        // End of list? Loop back to the start!
+        // FIRST SWITCH: We are currently in kmain. 
+        // We do NOT save kmain's state. We just jump to the first task.
+        current_process_index = process_count;
+    }
+
+    // 2. CHECK LOOP (If we reached the end of the list, go back to start)
+    if (current_process_index == 0) {
         current_process_index = process_count;
     }
 

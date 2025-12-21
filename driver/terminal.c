@@ -98,7 +98,7 @@ void cmd_func_2(__attribute__((unused)) s8int* args){
     kfree(num_buffer);
     s32int product = multiply_two_nums(nums[0], nums[1]);
     fb_print("the product is: ");
-    s8int *product_str = kmalloc(5000);
+    s8int *product_str = kmalloc(16);
     int_to_str(product, product_str);
     fb_print(product_str);
     fb_print("\n");
