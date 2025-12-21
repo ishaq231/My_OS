@@ -4,7 +4,7 @@
 
 This project demonstrates core OS concepts including protected mode switching, interrupt handling, paging, physical memory management, and ring protection (User Mode vs Kernel Mode).
 
-## 🚀 Features
+## Features
 
 * **Kernel:** Custom 32-bit Multiboot compliant kernel.
 * **Multitasking:** Preemptive scheduler (Round Robin) handling dynamic processes via a linked list.
@@ -30,7 +30,7 @@ To build and run this OS, you need a Linux environment (or WSL) with the followi
 * **Genisoimage** (To create the ISO image)
 * **QEMU** (Emulator for testing)
 
-## 💻 Installation & Usage
+## Installation & Usage
 
 1.  **Clone the repository:**
     ```bash
@@ -56,7 +56,7 @@ To build and run this OS, you need a Linux environment (or WSL) with the followi
     make clean
     ```
 
-## 🐚 Shell Commands
+## Shell Commands
 
 Once the OS boots, you can interact with the system using the following commands:
 
